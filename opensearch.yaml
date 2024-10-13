@@ -7,7 +7,7 @@ data:
     [SERVICE]
         flush        1
         daemon       Off
-        log_level    info # error, warning, info, debug, trace
+        log_level    trace # error, warning, info, debug, trace
         parsers_file parsers.conf
         plugins_file plugins.conf
         http_server  Off
@@ -18,16 +18,28 @@ data:
         # storage.sync normal
         # storage.checksum off
         # storage.backlog.mem_limit 5M
+        scheduler.base 3
+        scheduler.cap  12
 
     [INPUT]
         name   tcp
-        tag    app.tcp.*
         listen 0.0.0.0
         port   5170
+        format json
 
     [OUTPUT]
         name  stdout
         match *
+
+    [OUTPUT]
+        name  es
+        match *
+        host  192.168.2.3
+        port  9200
+        index my_index
+        type  my_type
+        retry_limit 1
+        storage.total_limit_size 1KB
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -46,21 +58,6 @@ spec:
         app: app
     spec:
       containers:
-        - name: app
-          image: busybox:1
-          args:
-          - /bin/sh
-          - -c
-          - >
-            i=0;
-            while true;
-            do
-              message=$(printf '{"level":"INFO", "message":"Log number %d", "timestamp":"%s"}\n' "$i" "$(date)")
-              echo "$message"
-              echo "$message" | nc localhost 5170
-              i=$((i+1));
-              sleep 5;
-            done
         - name: fluent-bit
           image: fluent/fluent-bit:3.1.9-debug
           ports:

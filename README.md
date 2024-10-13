@@ -6,13 +6,15 @@
   - [fluentbit](https://docs.fluentbit.io/)
 - k8s
   - [logging](https://kubernetes.io/docs/concepts/cluster-administration/logging/)
+- repo
+  - [fluent-logger-python](https://github.com/fluent/fluent-logger-python)
 
 ## examples
 
 ### sidecar container with a logging agent
 
 ```bash
-kubectl apply -f sidecar.yaml
+kubectl apply -f tcp.yaml
 ```
 
 #### tail logs
@@ -58,5 +60,44 @@ ______ _                  _    ______ _ _           _____  __
 [0] app.tcp.*: [[1728744757.916534687, {}], {"level"=>"INFO", "message"=>"Log number 2", "timestamp"=>"Sat Oct 12 14:52:37 UTC 2024"}]
 [0] app.tcp.*: [[1728744762.923420675, {}], {"level"=>"INFO", "message"=>"Log number 3", "timestamp"=>"Sat Oct 12 14:52:42 UTC 2024"}]
 [0] app.tcp.*: [[1728744767.929010853, {}], {"level"=>"INFO", "message"=>"Log number 4", "timestamp"=>"Sat Oct 12 14:52:47 UTC 2024"}]
+```
+
+### fluent logger python
+
+```bash
+cd app
+docker build -t fluent-logger:0.1.0 .
+```
+
+```bash
+kubectl apply -f python.yaml
+```
+
+#### http request
+
+```bash
+curl "localhost:30080"
+
+[0] app.tcp.log: [[1728810012.000000000, {}], {
+  "host"=>"app-deploy-844f6fdb68-nvmbn",
+  "where"=>"routes.home",
+  "type"=>"INFO",
+  "stack_trace"=>"None",
+  "message"=>"Hello, World!"
+}]
+```
+
+```bash
+curl "localhost:30080/items/12?q=123"
+
+[0] app.tcp.log: [[1728810033.000000000, {}], {
+  "host"=>"app-deploy-844f6fdb68-nvmbn",
+  "where"=>"routes.read_item",
+  "type"=>"INFO",
+  "stack_trace"=>"None",
+  "message"=>"{'item_id': 12, 'q': '123'}",
+  "item_id"=>12,
+  "q"=>"123"
+}]
 ```
 
